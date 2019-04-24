@@ -7,7 +7,9 @@
 # 02_b_filter_motor_file
 # Claus Brenner, 09 NOV 2012
 from math import sin, cos, pi
+
 from lego_robot import *
+
 
 # This function takes the old (x, y, heading) pose and the motor ticks
 # (ticks_left, ticks_right) and returns the new (x, y, heading).
@@ -21,20 +23,28 @@ def filter_step(old_pose, motor_ticks, ticks_to_mm, robot_width,
         # --->>> Use your previous implementation.
         # Think about if you need to modify your old code due to the
         # scanner displacement?
-        
+        theta = old_pose[2]
+        x_ = old_pose[0] - scanner_displacement * cos(theta)
+        y_ = old_pose[1] - scanner_displacement * sin(theta)
+
+        x = x_ + ticks_to_mm * motor_ticks[0] * cos(theta) + scanner_displacement * cos(theta)
+        y = y_ + ticks_to_mm * motor_ticks[0] * sin(theta) + scanner_displacement * sin(theta)
         return (x, y, theta)
 
     else:
-        # Turn. Compute alpha, R, etc.
+        alpha = ticks_to_mm * (motor_ticks[1] - motor_ticks[0]) / robot_width
+        r = ticks_to_mm * motor_ticks[0] / alpha
 
-        # --->>> Modify your previous implementation.
-        # First modify the the old pose to get the center (because the
-        #   old pose is the LiDAR's pose, not the robot's center pose).
-        # Second, execute your old code, which implements the motion model
-        #   for the center of the robot.
-        # Third, modify the result to get back the LiDAR pose from
-        #   your computed center. This is the value you have to return.
+        x_ = old_pose[0] - scanner_displacement * cos(old_pose[2])
+        y_ = old_pose[1] - scanner_displacement * sin(old_pose[2])
 
+        cx = x_ - (r + robot_width / 2) * sin(old_pose[2])
+        cy = y_ + (r + robot_width / 2) * cos(old_pose[2])
+
+        theta = (old_pose[2] + alpha) % (2 * pi)
+
+        x = cx + (r + robot_width / 2) * sin(theta) + (scanner_displacement * cos(old_pose[2]))
+        y = cy - (r + robot_width / 2) * cos(theta) + (scanner_displacement * sin(old_pose[2]))
         return (x, y, theta)
 
 if __name__ == '__main__':
@@ -65,5 +75,5 @@ if __name__ == '__main__':
     # Write all filtered positions to file.
     f = open("poses_from_ticks.txt", "w")
     for pose in filtered:
-        print >> f, "F %f %f %f" % pose
+        f.write("F %f %f %f" % pose)
     f.close()
